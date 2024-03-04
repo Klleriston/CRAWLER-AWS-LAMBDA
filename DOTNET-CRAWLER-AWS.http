@@ -1,0 +1,6 @@
+@DOTNET_CRAWLER_AWS_HostAddress = http://localhost:5000
+
+GET {{DOTNET_CRAWLER_AWS_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
