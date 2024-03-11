@@ -1,8 +1,16 @@
-using DOTNET_CRAWLER_AWS.Data;
+using Amazon.Lambda.Core;
+using Amazon.Lambda.Serialization.Json;
 using DOTNET_CRAWLER_AWS.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using Newtonsoft.Json;
+using System;
+using System.Net.Http;
+using System.Threading.Tasks;
 
+
+[assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
 namespace DOTNET_CRAWLER_AWS.Controllers
 {
     [ApiController]
@@ -10,12 +18,16 @@ namespace DOTNET_CRAWLER_AWS.Controllers
     public class WeatherController : ControllerBase
     {
         private readonly HttpClient _httpClient;
-        private readonly WeatherRepository _weatherRepository;
+        private readonly IMongoCollection<WheaterModel> _collection;
 
-        public WeatherController(HttpClient httpClient, WeatherRepository weatherRepository)
+        public WeatherController()
+        {
+            
+        }
+        public WeatherController(HttpClient httpClient, IMongoCollection<WheaterModel> collection)
         {
             _httpClient = httpClient;
-            _weatherRepository = weatherRepository;
+            _collection = collection;
         }
 
         [HttpGet]
@@ -23,8 +35,7 @@ namespace DOTNET_CRAWLER_AWS.Controllers
         {
             try
             {
-                string url = "https://api.openweathermap.org/data/2.5/weather?lat=-23.5505&lon=-46.6333&appid=f1cdb1003a7e05c670b29a5aabad3ce1";
-
+                string url = "https://api.openweathermap.org/data/2.5/weather?q=liberdade&appid=3c118c14342b9baa4e9a8ea4ee8af0bc";
                 HttpResponseMessage res = await _httpClient.GetAsync(url);
 
                 if (!res.IsSuccessStatusCode)
@@ -47,11 +58,11 @@ namespace DOTNET_CRAWLER_AWS.Controllers
                     CurrentTemperature = tempCelsius
                 };
 
-                await _weatherRepository.Insert(weatherModel);
+                await _collection.InsertOneAsync(weatherModel);
 
-                var result = new { CityName = cityName, CurrentTemp = currentTemp };
+                var result = weatherModel;
 
-                return Ok(result);
+                return Ok(weatherModel);
             }
             catch (Exception ex)
             {
