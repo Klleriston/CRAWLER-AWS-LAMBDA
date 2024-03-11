@@ -1,4 +1,4 @@
-# wEB CRAWLER 
+# WEB CRAWLER 
 
 ## Projeto para fins educatios onde o maior foco foi aprender como fazer uma lambda function utilizando dotnet com a api publica WeatherAPI
 
