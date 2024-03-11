@@ -1,10 +1,13 @@
-using DOTNET_CRAWLER_AWS.Controllers;
+
 using DOTNET_CRAWLER_AWS.Models;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
+
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -17,14 +20,6 @@ var collection = database.GetCollection<WheaterModel>("WheaterModel");
 
 builder.Services.AddSingleton(database);
 builder.Services.AddTransient(_ => collection);
-
-builder.Services.AddTransient(services =>
-{
-    var httpClientFactory = services.GetRequiredService<IHttpClientFactory>();
-    var httpClient = httpClientFactory.CreateClient();
-    var mongoCollection = services.GetRequiredService<IMongoCollection<WheaterModel>>();
-    return new WeatherController(httpClient, mongoCollection);
-});
 
 var app = builder.Build();
 

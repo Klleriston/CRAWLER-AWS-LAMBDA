@@ -1,56 +1,58 @@
 using Amazon.Lambda.Core;
 using Amazon.Lambda.Serialization.Json;
+using Amazon.Lambda.APIGatewayEvents;
 using DOTNET_CRAWLER_AWS.Models;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using Newtonsoft.Json;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 
-
 [assembly: LambdaSerializer(typeof(Amazon.Lambda.Serialization.Json.JsonSerializer))]
-namespace DOTNET_CRAWLER_AWS.Controllers
+
+namespace DOTNET_CRAWLER_AWS
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class WeatherController : ControllerBase
+    public class WeatherFunction
     {
         private readonly HttpClient _httpClient;
         private readonly IMongoCollection<WheaterModel> _collection;
 
-        public WeatherController()
+        public WeatherFunction()
         {
+            _httpClient = new HttpClient();
+
             
-        }
-        public WeatherController(HttpClient httpClient, IMongoCollection<WheaterModel> collection)
-        {
-            _httpClient = httpClient;
-            _collection = collection;
+            var mongoClient = new MongoClient("mongodb+srv://root:root@temporal.geu4dnl.mongodb.net/?retryWrites=true&w=majority&appName=temporal");
+            var database = mongoClient.GetDatabase("temporal"); 
+            _collection = database.GetCollection<WheaterModel>("WheaterModel"); 
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAPI()
+        public async Task<APIGatewayProxyResponse> FunctionHandler(APIGatewayProxyRequest request, ILambdaContext context)
         {
             try
             {
-                string url = "https://api.openweathermap.org/data/2.5/weather?q=liberdade&appid=3c118c14342b9baa4e9a8ea4ee8af0bc";
+                string apiKey = "3c118c14342b9baa4e9a8ea4ee8af0bc";
+                string city = "liberdade";
+                string url = $"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={apiKey}";
+
                 HttpResponseMessage res = await _httpClient.GetAsync(url);
 
                 if (!res.IsSuccessStatusCode)
                 {
-                    return StatusCode((int)res.StatusCode, "Erro na requisição.");
+                    return new APIGatewayProxyResponse
+                    {
+                        StatusCode = (int)res.StatusCode,
+                        Body = "Erro na requisição."
+                    };
                 }
 
                 string content = await res.Content.ReadAsStringAsync();
                 dynamic resJSON = JsonConvert.DeserializeObject(content);
 
-                double tempKelvin = (double)resJSON["main"]["temp"];
+                double tempKelvin = (double)resJSON.main.temp;
                 double tempCelsius = tempKelvin - 273.15;
 
-                string cityName = resJSON["name"].ToString();
-                string currentTemp = tempCelsius.ToString("00");
+                string cityName = resJSON.name;
 
                 var weatherModel = new WheaterModel
                 {
@@ -60,13 +62,22 @@ namespace DOTNET_CRAWLER_AWS.Controllers
 
                 await _collection.InsertOneAsync(weatherModel);
 
-                var result = weatherModel;
+                var response = new APIGatewayProxyResponse
+                {
+                    StatusCode = 200,
+                    Body = JsonConvert.SerializeObject(weatherModel),
+                    Headers = new Dictionary<string, string> { { "Content-Type", "application/json" } }
+                };
 
-                return Ok(weatherModel);
+                return response;
             }
             catch (Exception ex)
             {
-                return BadRequest($"Ocorreu um erro: {ex.Message}");
+                return new APIGatewayProxyResponse
+                {
+                    StatusCode = 500,
+                    Body = $"Ocorreu um erro: {ex.Message}"
+                };
             }
         }
     }
