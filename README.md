@@ -22,7 +22,7 @@
 
  ![Esquema](assets/tela.png)
 ## Link do Crawler via aws:
-- https://kgdcdb6hvxn4zttvb4gg5p6u7m0oibwl.lambda-url.us-east-1.on.aws/
+- OFF 😢
 
 ## Contato
 - Github: https://github.com/Klleriston
